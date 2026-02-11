@@ -7,6 +7,6 @@ public class Photo : BaseEntity<int>
     public string ImageUrl { get; set; }
 
     public int ProductId { get; set; }
-    [ForeignKey("ProductId")]
-    public virtual Product Product { get; set; }
+    //[ForeignKey("ProductId")]
+    //public virtual Product Product { get; set; }
 }
