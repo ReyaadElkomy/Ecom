@@ -3,6 +3,7 @@ using Ecom.Core.DTOs;
 using Ecom.Core.Entities.Product;
 using Ecom.Core.Interfaces;
 using Ecom.Core.Services;
+using Ecom.Core.Shares;
 using Ecom.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,6 +18,49 @@ public class ProductRepository : GenericRepository<Product>, IProductRepository
         _context = context;
         _mapper = mapper;
         _imageManagementService = imageManagementService;
+    }
+
+    public async Task<IEnumerable<ProductDto>> GetAllSortedByPriceAsync(ProductParams productParams)
+    {
+        var products = _context.Products
+            .Include(p => p.Category)
+            .Include(p => p.Photos)
+            .AsNoTracking();
+
+        // Apply search filter if provided
+        if (!string.IsNullOrWhiteSpace(productParams.SearchTerm))
+        {
+           var searchWords = productParams.SearchTerm.Trim().ToLower().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+              products = products.Where(p => searchWords.Any(word => p.Name.ToLower().Contains(word.ToLower()) ||
+                        p.Description.ToLower().Contains(word.ToLower())
+              ));
+
+        }
+
+        // Apply category filter if provided
+        if (productParams.CategoryId.HasValue)
+            products = products.Where(p => p.CategoryId == productParams.CategoryId.Value);
+
+
+        if (!string.IsNullOrWhiteSpace(productParams.Sort))
+        {
+            productParams.Sort = productParams.Sort.Trim().ToLower();
+            products = productParams.Sort switch
+            {
+                "priceasc" => products.OrderBy(p => p.NewPrice),
+                "pricedesc" => products.OrderByDescending(p => p.NewPrice),
+                _ => products.OrderBy(p => p.Name),
+            };
+        }
+
+        // Apply pagination
+        products = products
+            .Skip((productParams.PageNumber - 1) * productParams.PageSize)
+            .Take(productParams.PageSize);
+
+        var productList = await products.ToListAsync();
+
+        return _mapper.Map<IEnumerable<ProductDto>>(productList);
     }
 
     public async Task<bool> AddAsync(CreateProductAddDto createProductDto)
@@ -48,7 +92,6 @@ public class ProductRepository : GenericRepository<Product>, IProductRepository
             throw;
         }
     }
-
 
     public async Task<bool> UpdateAsync(UpdateProductDto updateProductDto)
     {

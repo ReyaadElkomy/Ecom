@@ -2,6 +2,7 @@
 using Ecom.Api.Helpers;
 using Ecom.Core.DTOs;
 using Ecom.Core.Interfaces;
+using Ecom.Core.Shares;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,20 +15,15 @@ public class ProductsController : BaseController
     }
 
     [HttpGet("get-all")]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll([FromQuery] ProductParams productParams)
     {
         try
         {
-            var products = await _unitOfWork.ProductRepository.GetAllAsync(
-                    x => x.Category, x => x.Photos
-                );
-
-            var result = _mapper.Map<List<ProductDto>>(products);
-
-            if (products is null || !products.Any())
-                return Ok(new ResponseApi(200, "No products found!"));
-
-            return Ok(result);
+            var products = await _unitOfWork.ProductRepository
+                .GetAllSortedByPriceAsync(productParams);
+         
+            var totalCount = await _unitOfWork.ProductRepository.CountAsync(); 
+            return Ok(new Pagination<ProductDto>(productParams.PageNumber, productParams.PageSize, totalCount, products));
         }
         catch (Exception ex)
         {
