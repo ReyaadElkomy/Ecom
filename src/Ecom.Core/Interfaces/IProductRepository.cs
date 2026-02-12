@@ -6,4 +6,6 @@ public interface IProductRepository : IGenericRepository<Product>
 {
     Task<bool> AddAsync(CreateProductAddDto createProductDto);
     Task<bool> UpdateAsync(UpdateProductDto updateProductDto);
+
+    Task DeleteAsync(Product product);
 }

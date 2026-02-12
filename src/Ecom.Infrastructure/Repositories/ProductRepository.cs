@@ -103,5 +103,26 @@ public class ProductRepository : GenericRepository<Product>, IProductRepository
         }
     }
 
+    public async Task DeleteAsync(Product product)
+    {
+        if (product is null)
+            throw new ArgumentNullException(nameof(product));
 
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            foreach (var photo in product.Photos)
+            {
+                _imageManagementService.DeleteImage(photo.ImageName);
+            }
+            _context.Products.Remove(product);
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }
 }

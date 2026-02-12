@@ -83,4 +83,23 @@ public class ProductsController : BaseController
         }
     }
 
+
+    [HttpDelete("delete-product/{id}")]
+    public async Task<IActionResult> DeleteProduct(int id)
+    {
+        try
+        {
+            var product = await _unitOfWork.ProductRepository
+                .GetByIdAsync(id, x=>x.Category, x=> x.Photos);
+            if (product is null)
+                return NotFound(new ResponseApi(404, $"Product with id {id} not found!"));
+
+            await _unitOfWork.ProductRepository.DeleteAsync(product);
+            return Ok(new ResponseApi(200, "Product has been deleted!"));
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
 }
