@@ -7,6 +7,18 @@ using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// CORS configuration
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("CorsPolicy", policy =>
+    {
+        policy.AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials()
+              .WithOrigins("http://www.localhost:4200");
+    });
+});
+
 // Configure rate limiting
 builder.Services.AddRateLimiter(options =>
 {
@@ -44,6 +56,9 @@ builder.Services.AddSwaggerGen();
 builder.Services.InfrastructureConfiguration(builder.Configuration);
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 var app = builder.Build();
+
+
+app.UseCors("CorsPolicy");
 
 app.UseMiddleware<ExceptionsMiddleware>();
 
